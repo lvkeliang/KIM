@@ -1,4 +1,4 @@
-package mock
+package main
 
 import (
 	"KIM/inter"
@@ -10,8 +10,17 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"net"
+	"strings"
 	"time"
 )
+
+func main() {
+
+	client := &ClientDemo{}
+	client.Start("minimal_client", "tcp", "http://127.0.0.1:8080")
+	// client.Start("minimal_client", "ws", "ws://127.0.0.1:8080")
+
+}
 
 type ClientDemo struct{}
 
@@ -25,22 +34,20 @@ func (c *ClientDemo) Start(userID, protocolwt, addr string) {
 		cli = tcp.NewClient("test1", "client", tcp.ClientOptions{})
 		cli.SetDialer(&TCPDialer{})
 	}
-
 	// 建立连接
 	err := cli.Connect(addr)
 	if err != nil {
 		logger.Error(err)
 	}
-
 	count := 10
 	go func() {
 		// 发送消息然后退出
 		for i := 0; i < count; i++ {
-		}
-		err := cli.Send([]byte("hello"))
-		if err != nil {
-			logger.Error(err)
-			return
+			err := cli.Send([]byte("hello"))
+			if err != nil {
+				logger.Error(err)
+				return
+			}
 			time.Sleep(time.Second)
 		}
 	}()
@@ -57,7 +64,8 @@ func (c *ClientDemo) Start(userID, protocolwt, addr string) {
 			continue
 		}
 		recv++
-		logger.Warnf("%s receive message [%s]", cli.ID, frame.GetPayload())
+		logger.Warnf("%s receive message [%s]", cli.ID(), frame.GetPayload())
+
 		if recv == count { // 接收完消息
 			break
 		}
@@ -88,13 +96,11 @@ func (d *WebsocketDialer) DialAndHandshake(ctx inter.DialerContext) (net.Conn, e
 	if err != nil {
 		return nil, err
 	}
-
 	// 发送认证消息, 示例为userid
 	err = wsutil.WriteClientBinary(conn, []byte(ctx.Id))
 	if err != nil {
 		return nil, err
 	}
-
 	return conn, nil
 }
 
@@ -106,7 +112,12 @@ type TCPDialer struct {
 func (d *TCPDialer) DialAndHandshake(ctx inter.DialerContext) (net.Conn, error) {
 	logger.Info("start tcp dial: ", ctx.Address)
 	// 1 调用net.Dial拨号
-	conn, err := net.DialTimeout("tcp", ctx.Address, ctx.Timeout)
+	address := ctx.Address
+	if strings.Contains(address, "://") {
+		// 去除协议前缀
+		address = strings.Split(address, "://")[1]
+	}
+	conn, err := net.DialTimeout("tcp", address, ctx.Timeout)
 	if err != nil {
 		return nil, err
 	}

@@ -13,7 +13,7 @@ type Event struct {
 }
 
 func NewEvent() *Event {
-	return &Event{fired: 1, doneChan: make(chan struct{})}
+	return &Event{fired: 0, doneChan: make(chan struct{})}
 }
 
 func (e *Event) Done() {

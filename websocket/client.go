@@ -101,7 +101,6 @@ func (c *Client) Connect(addr string) error {
 		return fmt.Errorf("conn is nil")
 	}
 	c.conn = conn
-
 	if c.options.Heartbeat > 0 {
 		go func() {
 			err := c.heartbealoop(conn)
@@ -139,16 +138,20 @@ func (c *Client) Read() (protocol.Frame, error) {
 	if c.conn == nil {
 		return nil, errors.New("connection is nil")
 	}
+
 	if c.options.Heartbeat > 0 {
 		_ = c.conn.SetReadDeadline(time.Now().Add(c.options.ReadWait))
 	}
+
 	frame, err := ws.ReadFrame(c.conn)
 	if err != nil {
 		return nil, err
 	}
+
 	if frame.Header.OpCode == ws.OpClose {
 		return nil, errors.New("remote side close the channel")
 	}
+
 	return &Frame{
 		raw: frame,
 	}, nil

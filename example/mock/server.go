@@ -1,4 +1,4 @@
-package mock
+package main
 
 import (
 	"KIM/inter"
@@ -7,8 +7,27 @@ import (
 	"KIM/tcp"
 	"KIM/websocket"
 	"errors"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
+
+func main() {
+
+	// 创建服务器实例
+	server := &ServerDemo{}
+
+	// 启动服务器
+	go server.Start("minimal_server", "tcp", ":8080")
+	//go server.Start("minimal_server", "ws", ":8080")
+
+	// 等待终止信号
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+	logger.Info("server shutting down...")
+}
 
 type ServerDemo struct{}
 
@@ -16,7 +35,7 @@ type ServerHandler struct{}
 
 func (s *ServerDemo) Start(id, protocol, addr string) {
 	var srv inter.Server
-	service := inter.ServiceRegistration{}
+	service := inter.ServiceRegistration{} // 这里需要实现具体逻辑
 
 	if protocol == "ws" {
 		srv = websocket.NewServer(addr, service)
@@ -26,9 +45,12 @@ func (s *ServerDemo) Start(id, protocol, addr string) {
 
 	handler := &ServerHandler{}
 
+	// 必须设置所有必需的监听器
 	srv.SetReadWait(time.Minute)
 	srv.SetAcceptor(handler)
 	srv.SetMessageListener(handler)
+
+	srv.SetStateListener(handler) // 添加这行
 
 	err := srv.Start()
 	if err != nil {
@@ -52,7 +74,7 @@ func (h *ServerHandler) Accept(conn protocol.Conn, timeout time.Duration) (strin
 }
 
 func (h *ServerHandler) Receive(ag inter.Agent, payload []byte) {
-	ack := string(payload) + " from server "
+	ack := string(payload) + " from server"
 	_ = ag.Push([]byte(ack))
 }
 

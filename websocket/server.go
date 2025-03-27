@@ -6,10 +6,10 @@ import (
 	"KIM/logger"
 	"KIM/protocol"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gobwas/ws"
+	"github.com/segmentio/ksuid"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -26,49 +26,50 @@ func NewDefaultAcceptor() *defaultAcceptor {
 
 // Accept 实现Acceptor接口
 func (a *defaultAcceptor) Accept(conn protocol.Conn, timeout time.Duration) (string, error) {
-	// 1. 设置读取超时
-	_ = conn.SetReadDeadline(time.Now().Add(timeout))
-	defer conn.SetReadDeadline(time.Time{}) // 重置超时
-
-	// 2. 读取握手消息
-	frame, err := conn.ReadFrame()
-	if err != nil {
-		return "", errors.New("read handshake frame failed: " + err.Error())
-	}
-
-	// 3. 验证消息类型
-	if frame.GetOpCode() != protocol.OpBinary {
-		return "", errors.New("invalid handshake opcode")
-	}
-
-	// 4. 解析握手数据（示例JSON格式）
-	var handshake struct {
-		Token    string `json:"token"`
-		DeviceID string `json:"device_id"`
-	}
-	if err := json.Unmarshal(frame.GetPayload(), &handshake); err != nil {
-		return "", errors.New("invalid handshake format")
-	}
-
-	// 5. 验证Token（示例逻辑）
-	if handshake.Token == "" {
-		return "", errors.New("token required")
-	}
-
-	// 6. 生成ChannelID（示例：deviceID + timestamp）
-	if handshake.DeviceID == "" {
-		return "", errors.New("device_id required")
-	}
-	channelID := handshake.DeviceID + "-" + time.Now().Format("20060102150405")
-
-	// 7. 返回成功响应
-	response := map[string]string{"status": "success", "channel_id": channelID}
-	respData, _ := json.Marshal(response)
-	if err := conn.WriteFrame(protocol.OpBinary, respData); err != nil {
-		return "", errors.New("send handshake response failed")
-	}
-
-	return channelID, nil
+	return ksuid.New().String(), nil
+	//// 1. 设置读取超时
+	//_ = conn.SetReadDeadline(time.Now().Add(timeout))
+	//defer conn.SetReadDeadline(time.Time{}) // 重置超时
+	//
+	//// 2. 读取握手消息
+	//frame, err := conn.ReadFrame()
+	//if err != nil {
+	//	return "", errors.New("read handshake frame failed: " + err.Error())
+	//}
+	//
+	//// 3. 验证消息类型
+	//if frame.GetOpCode() != protocol.OpBinary {
+	//	return "", errors.New("invalid handshake opcode")
+	//}
+	//
+	//// 4. 解析握手数据（示例JSON格式）
+	//var handshake struct {
+	//	Token    string `json:"token"`
+	//	DeviceID string `json:"device_id"`
+	//}
+	//if err := json.Unmarshal(frame.GetPayload(), &handshake); err != nil {
+	//	return "", errors.New("invalid handshake format")
+	//}
+	//
+	//// 5. 验证Token（示例逻辑）
+	//if handshake.Token == "" {
+	//	return "", errors.New("token required")
+	//}
+	//
+	//// 6. 生成ChannelID（示例：deviceID + timestamp）
+	//if handshake.DeviceID == "" {
+	//	return "", errors.New("device_id required")
+	//}
+	//channelID := handshake.DeviceID + "-" + time.Now().Format("20060102150405")
+	//
+	//// 7. 返回成功响应
+	//response := map[string]string{"status": "success", "channel_id": channelID}
+	//respData, _ := json.Marshal(response)
+	//if err := conn.WriteFrame(protocol.OpBinary, respData); err != nil {
+	//	return "", errors.New("send handshake response failed")
+	//}
+	//
+	//return channelID, nil
 }
 
 type ServerOptions struct {
@@ -96,12 +97,12 @@ func resp(w http.ResponseWriter, statusCode int, message string) {
 	_, _ = w.Write([]byte(message))
 }
 
-func (s Server) Start() error {
+func (s *Server) Start() error {
 	mux := http.NewServeMux()
 	log := logger.WithFields(logger.Fields{
 		"module": "ws.server",
 		"listen": s.listen,
-		"id":     s.ServiceID(),
+		// TODO: "id":     s.ServiceID(),
 	})
 
 	if s.Acceptor == nil {
@@ -133,6 +134,7 @@ func (s Server) Start() error {
 			conn.Close()
 			return
 		}
+
 		if _, ok := s.Get(id); ok {
 			log.Warnf("channel %s existed", id)
 			_ = conn.WriteFrame(protocol.OpClose, []byte("channelId is repeated"))
@@ -163,27 +165,27 @@ func (s Server) Start() error {
 	return http.ListenAndServe(s.listen, mux)
 }
 
-func (s Server) SetAcceptor(acceptor inter.Acceptor) {
+func (s *Server) SetAcceptor(acceptor inter.Acceptor) {
 	s.Acceptor = acceptor
 }
 
-func (s Server) SetMessageListener(messageListener inter.MessageListener) {
+func (s *Server) SetMessageListener(messageListener inter.MessageListener) {
 	s.MessageListener = messageListener
 }
 
-func (s Server) SetStateListener(stateListener inter.StateListener) {
+func (s *Server) SetStateListener(stateListener inter.StateListener) {
 	s.StateListener = stateListener
 }
 
-func (s Server) SetReadWait(duration time.Duration) {
+func (s *Server) SetReadWait(duration time.Duration) {
 	s.options.readWait = duration
 }
 
-func (s Server) SetChannelMap(channelMap inter.ChannelMap) {
+func (s *Server) SetChannelMap(channelMap inter.ChannelMap) {
 	s.ChannelMap = channelMap
 }
 
-func (s Server) Push(id string, data []byte) error {
+func (s *Server) Push(id string, data []byte) error {
 	ch, ok := s.ChannelMap.Get(id)
 	if !ok {
 		return errors.New("channel no found")
@@ -191,7 +193,7 @@ func (s Server) Push(id string, data []byte) error {
 	return ch.Push(data)
 }
 
-func (s Server) Shutdown(ctx context.Context) error {
+func (s *Server) Shutdown(ctx context.Context) error {
 	log := logger.WithFields(logger.Fields{
 		// "module": s.Name(),
 		"id": s.ServiceID(),
