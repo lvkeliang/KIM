@@ -14,11 +14,16 @@ type Service interface {
 }
 
 // ServiceRegistration 服务注册接口
-type ServiceRegistration struct {
+type ServiceRegistration interface {
 	Service
+	GetTags() []string
+	PublicPort() int
+	PublicAddress() string
+	GetProtocol() string
 }
 
 type Server interface {
+	ServiceRegistration
 	SetAcceptor(Acceptor)
 	SetMessageListener(MessageListener)
 	SetStateListener(StateListener)

@@ -3,6 +3,7 @@ package main
 import (
 	"KIM/inter"
 	"KIM/logger"
+	"KIM/naming"
 	"KIM/protocol"
 	"KIM/tcp"
 	"KIM/websocket"
@@ -35,7 +36,10 @@ type ServerHandler struct{}
 
 func (s *ServerDemo) Start(id, protocol, addr string) {
 	var srv inter.Server
-	service := inter.ServiceRegistration{} // 这里需要实现具体逻辑
+	service := naming.DefaultServiceRegistration{
+		Id:       id,
+		Protocol: protocol,
+	}
 
 	if protocol == "ws" {
 		srv = websocket.NewServer(addr, service)

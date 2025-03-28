@@ -52,7 +52,7 @@ func (s *Server) Start() error {
 	log := logger.WithFields(logger.Fields{
 		"module": "tcp.server",
 		"listen": s.listen,
-		//TODO: "id":     s.ServiceID(),
+		"id":     s.ServiceID(),
 	})
 
 	if s.Acceptor == nil {
