@@ -7,8 +7,7 @@ import (
 )
 
 type Client interface {
-	ID() string
-	Name() string
+	Service
 	// Connect 向一个服务器地址发起连接
 	Connect(string) error
 	// SetDialer 设置拨号器, Dialer在Connect中会被调用，用于完成连接的建立和握手

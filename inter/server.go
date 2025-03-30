@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// 定义了基础服务的抽象接口
+// Service 定义了基础服务的抽象接口
 type Service interface {
 	ServiceID() string
 	ServiceName() string
@@ -18,6 +18,7 @@ type ServiceRegistration interface {
 	Service
 	GetTags() []string
 	PublicPort() int
+	DialURL() string
 	PublicAddress() string
 	GetProtocol() string
 }
@@ -32,7 +33,7 @@ type Server interface {
 	// SetChannelMap 设置连接管理器，自动管理连接的生命周期
 	SetChannelMap(ChannelMap)
 	Start() error
-	Push(string, []byte) error
+	Push(channelId string, data []byte) error
 	Shutdown(ctx context.Context) error
 }
 

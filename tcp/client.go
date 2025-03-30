@@ -32,6 +32,19 @@ type Client struct {
 	conn    protocol.Conn
 	state   int32
 	options ClientOptions
+	Meta    map[string]string
+}
+
+func (c *Client) ServiceID() string {
+	return c.id
+}
+
+func (c *Client) ServiceName() string {
+	return c.name
+}
+
+func (c *Client) GetMeta() map[string]string {
+	return c.Meta
 }
 
 // Connect to server
@@ -112,14 +125,6 @@ func (c *Client) heartbealoop() error {
 	return nil
 }
 
-func (c *Client) ID() string {
-	return c.id
-}
-
-func (c *Client) Name() string {
-	return c.name
-}
-
 // SetDialer 设置握手逻辑
 func (c *Client) SetDialer(dialer inter.Dialer) {
 	c.Dialer = dialer
@@ -160,6 +165,23 @@ func NewClient(id, name string, opts ClientOptions) inter.Client {
 		id:      id,
 		name:    name,
 		options: opts,
+	}
+	return cli
+}
+
+func NewClientWithProps(id, name string, meta map[string]string, opts ClientOptions) inter.Client {
+	if opts.WriteWait == 0 {
+		opts.WriteWait = config.DefaultWriteWait
+	}
+	if opts.ReadWait == 0 {
+		opts.ReadWait = config.DefaultReadWait
+	}
+
+	cli := &Client{
+		id:      id,
+		name:    name,
+		options: opts,
+		Meta:    meta,
 	}
 	return cli
 }

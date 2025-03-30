@@ -33,14 +33,19 @@ type Client struct {
 	conn    net.Conn
 	state   int32
 	options ClientOptions
+	Meta    map[string]string
 }
 
-func (c *Client) ID() string {
+func (c *Client) ServiceID() string {
 	return c.id
 }
 
-func (c *Client) Name() string {
+func (c *Client) ServiceName() string {
 	return c.name
+}
+
+func (c *Client) GetMeta() map[string]string {
+	return c.Meta
 }
 
 // SetDialer 设置握手逻辑

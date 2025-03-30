@@ -2,6 +2,14 @@ package protocol
 
 import "net"
 
+type Protocol string
+
+// Protocol
+const (
+	ProtocolTCP       Protocol = "tcp"
+	ProtocolWebsocket Protocol = "websocket"
+)
+
 type OpCode byte
 
 // 直接搬来websocket的OpCode, 减少转换逻辑

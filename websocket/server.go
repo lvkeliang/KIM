@@ -185,8 +185,8 @@ func (s *Server) SetChannelMap(channelMap inter.ChannelMap) {
 	s.ChannelMap = channelMap
 }
 
-func (s *Server) Push(id string, data []byte) error {
-	ch, ok := s.ChannelMap.Get(id)
+func (s *Server) Push(channelId string, data []byte) error {
+	ch, ok := s.ChannelMap.Get(channelId)
 	if !ok {
 		return errors.New("channel no found")
 	}

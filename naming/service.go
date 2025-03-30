@@ -1,5 +1,7 @@
 package naming
 
+import "fmt"
+
 // 提供一个对inter.ServiceRegistration的默认实现
 type DefaultServiceRegistration struct {
 	Id        string
@@ -10,6 +12,13 @@ type DefaultServiceRegistration struct {
 	Namespace string
 	Tags      []string
 	Meta      map[string]string
+}
+
+func (d DefaultServiceRegistration) DialURL() string {
+	if d.Protocol == "tcp" {
+		return fmt.Sprintf("%s:%d", d.Address, d.Port)
+	}
+	return fmt.Sprintf("%s://%s:%d", d.Protocol, d.Address, d.Port)
 }
 
 func (d DefaultServiceRegistration) ServiceID() string {
