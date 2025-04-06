@@ -1,6 +1,6 @@
 syntax = "proto3";
-package protocol;  // 替换为你的包名
-option go_package = "./protoImpl";  // 生成的 Go 包路径
+package protocol;
+option go_package = "./protoImpl";
 
 // 定义枚举类型（对应 Flag 和 Status）
 enum Flag {

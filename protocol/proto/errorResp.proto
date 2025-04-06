@@ -1,0 +1,7 @@
+syntax = "proto3";
+package protocol;
+option go_package = "./protoImpl";
+
+message ErrorResp {
+  string message= 1;
+}

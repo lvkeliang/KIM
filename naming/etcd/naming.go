@@ -1,7 +1,7 @@
 package etcd
 
 import (
-	"KIM/inter"
+	"KIM/communication"
 	"KIM/naming"
 	"context"
 	"encoding/json"
@@ -40,7 +40,7 @@ func (e *EtcdNaming) key(serviceName, serviceID string) string {
 	return fmt.Sprintf("%s/%s/%s", e.rootPath, serviceName, serviceID)
 }
 
-func (e *EtcdNaming) Register(service inter.ServiceRegistration) error {
+func (e *EtcdNaming) Register(service communication.ServiceRegistration) error {
 	key := e.key(service.ServiceName(), service.ServiceID())
 	val, err := json.Marshal(service)
 	if err != nil {
@@ -68,14 +68,14 @@ func (e *EtcdNaming) Deregister(serviceID string) error {
 	return nil
 }
 
-func (e *EtcdNaming) Find(serviceName string, tags ...string) ([]inter.ServiceRegistration, error) {
+func (e *EtcdNaming) Find(serviceName string, tags ...string) ([]communication.ServiceRegistration, error) {
 	ctx := context.Background()
 	prefix := fmt.Sprintf("%s/%s/", e.rootPath, serviceName)
 	resp, err := e.cli.Get(ctx, prefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
-	var services []inter.ServiceRegistration
+	var services []communication.ServiceRegistration
 	for _, kv := range resp.Kvs {
 		var reg naming.DefaultServiceRegistration
 		if err := json.Unmarshal(kv.Value, &reg); err != nil {
@@ -104,7 +104,7 @@ func matchTags(serviceTags []string, queryTags []string) bool {
 	return true
 }
 
-func (e *EtcdNaming) Subscribe(serviceName string, callback func([]inter.ServiceRegistration)) error {
+func (e *EtcdNaming) Subscribe(serviceName string, callback func([]communication.ServiceRegistration)) error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	if _, ok := e.watches[serviceName]; ok {

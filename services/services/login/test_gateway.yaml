@@ -1,0 +1,9 @@
+ServiceID: "gate_test"
+ServiceName: "wgateway"
+Listen: ":8000" # 网关监听端口
+PublicAddress: "localhost" # 客户端连接地址
+PublicPort: 8000 # 客户端连接端口
+Tags: ["test"]
+ConsulURL: "localhost:8500" # Consul地址
+RedisAddrs: ["localhost:6379"] # Redis地址
+AppSecret: "default_secret" # 和token生成一致

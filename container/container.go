@@ -1,13 +1,13 @@
 package container
 
 import (
+	"KIM/communication"
+	"KIM/communication/tcp"
 	"KIM/config"
-	"KIM/inter"
 	"KIM/logger"
 	"KIM/naming"
 	"KIM/protocol"
 	"KIM/protocol/protoImpl"
-	"KIM/tcp"
 	"bytes"
 	"context"
 	"errors"
@@ -39,13 +39,13 @@ const (
 
 type Container struct {
 	sync.RWMutex
-	naming.Naming
-	Srv        inter.Server
+	Naming     naming.Naming
+	Srv        communication.Server
 	state      uint32
 	srvclients map[string]ClientMap
 	selector   Selector
-	dialer     inter.Dialer        //创建Client时用于处理拨号和握手
-	deps       map[string]struct{} // 依赖的服务
+	dialer     communication.Dialer //创建Client时用于处理拨号和握手
+	deps       map[string]struct{}  // 依赖的服务
 }
 
 var log = logger.WithField("module", "container")
@@ -61,7 +61,7 @@ func Default() *Container {
 }
 
 // Init deps参数传入依赖的服务，如wire.SNChat, wire.SNLogin
-func Init(srv inter.Server, deps ...string) error {
+func Init(srv communication.Server, deps ...string) error {
 	if !atomic.CompareAndSwapUint32(&c.state, stateUninitialized, stateInitialized) {
 		return errors.New("container has already initialized")
 	}
@@ -78,13 +78,17 @@ func Init(srv inter.Server, deps ...string) error {
 }
 
 // SetDialer 创建Client时用于处理拨号和握手
-func SetDialer(dialer inter.Dialer) {
+func SetDialer(dialer communication.Dialer) {
 	c.dialer = dialer
 }
 
 // SetSelector 注册一个自定义的服务路由器
 func SetSelector(selector Selector) {
 	c.selector = selector
+}
+
+func SetServiceNaming(nm naming.Naming) {
+	c.Naming = nm
 }
 
 func Start() error {
@@ -97,7 +101,7 @@ func Start() error {
 	}
 
 	// 启动server
-	go func(srv inter.Server) {
+	go func(srv communication.Server) {
 		err := srv.Start()
 		if err != nil {
 			log.Errorln(err)
@@ -137,14 +141,14 @@ func connectToService(serviceName string) error {
 
 	//1.订阅服务的新增
 	delay := time.Second * 10
-	err := c.Naming.Subscribe(serviceName, func(services []inter.ServiceRegistration) {
+	err := c.Naming.Subscribe(serviceName, func(services []communication.ServiceRegistration) {
 		for _, service := range services {
 			if _, ok := clients.Get(service.ServiceID()); ok {
 				continue
 			}
 			log.WithField("func", "connectToService").Infof("Watch a new service: %v", service)
 			service.GetMeta()[KeyServiceState] = StateYoung
-			go func(service inter.ServiceRegistration) {
+			go func(service communication.ServiceRegistration) {
 				// 等待新增的服务与各个服务完成连接
 				time.Sleep(delay)
 				service.GetMeta()[KeyServiceState] = StateAdult
@@ -179,7 +183,7 @@ func connectToService(serviceName string) error {
 }
 
 // 发现提供服务的server后，立即创建一个client与之建立连接
-func buildClient(clients ClientMap, service inter.ServiceRegistration) (inter.Client, error) {
+func buildClient(clients ClientMap, service communication.ServiceRegistration) (communication.Client, error) {
 	c.Lock()
 	defer c.Unlock()
 	var (
@@ -211,7 +215,7 @@ func buildClient(clients ClientMap, service inter.ServiceRegistration) (inter.Cl
 		return nil, err
 	}
 	// 4. 读取消息
-	go func(cli inter.Client) {
+	go func(cli communication.Client) {
 		err := readLoop(cli)
 		if err != nil {
 			log.Debug(err)
@@ -225,7 +229,7 @@ func buildClient(clients ClientMap, service inter.ServiceRegistration) (inter.Cl
 }
 
 // Receive default listener
-func readLoop(cli inter.Client) error {
+func readLoop(cli communication.Client) error {
 	log := logger.WithFields(logger.Fields{
 		"module": "container",
 		"func":   "readLoop",
@@ -345,7 +349,7 @@ func ForwardWithSelector(serviceName string, packet *protocol.LogicPkt, selector
 }
 
 // 负载均衡和路由，根据服务名查找一个可靠的服务
-func lookup(serviceName string, header *protoImpl.Header, selector Selector) (inter.Client, error) {
+func lookup(serviceName string, header *protoImpl.Header, selector Selector) (communication.Client, error) {
 	clients, ok := c.srvclients[serviceName]
 	if !ok {
 		return nil, fmt.Errorf("service %s not found", serviceName)

@@ -1,7 +1,7 @@
 package consul
 
 import (
-	"KIM/inter"
+	"KIM/communication"
 	"KIM/naming"
 	"sync"
 	"testing"
@@ -41,7 +41,7 @@ func Test_Naming(t *testing.T) {
 	wg.Add(1)
 
 	// 3. 监听服务实时变化（新增）
-	_ = ns.Subscribe(serviceName, func(services []inter.ServiceRegistration) {
+	_ = ns.Subscribe(serviceName, func(services []communication.ServiceRegistration) {
 		t.Log(len(services))
 
 		assert.Equal(t, 2, len(services))

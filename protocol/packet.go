@@ -4,12 +4,12 @@ import (
 	"KIM/protocol/protoImpl"
 	"KIM/util"
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"io"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 type Magic [4]byte
@@ -24,9 +24,6 @@ type Packet interface {
 	Decode(r io.Reader) error
 	Encode(w io.Writer) error
 }
-
-type Flag int32
-type Status int32
 
 // MarshalPacket 封包，包的统一封包方法，通过反射判断包类型并写入对应的魔数，之后调用其Encode方法
 func MarshalPacket(p Packet) []byte {
@@ -63,7 +60,8 @@ func UnMarshalPacket(r io.Reader) (interface{}, error) {
 		}
 		return p, nil
 	default:
-		return nil, errors.New("magic code is incorrect")
+		restBytes, _ := io.ReadAll(r)
+		return nil, fmt.Errorf("magic code is incorrect: %v, expect %v or %v\npackage: \n%v\n", magic, MagicLogicPkt, MagicBasicPkt, restBytes)
 	}
 }
 
@@ -93,6 +91,33 @@ func MustUnMarshalBasicPkt(r io.Reader) (*BasicPkt, error) {
 type LogicPkt struct {
 	protoImpl.Header
 	Body []byte
+}
+
+// NewLogicPkt new a empty payload message
+func NewLogicPkt(command string, options ...HeaderOption) *LogicPkt {
+	pkt := &LogicPkt{}
+	pkt.Command = command
+
+	for _, option := range options {
+		option(&pkt.Header)
+	}
+	if pkt.Sequence == 0 {
+		pkt.Sequence = util.Seq.Next()
+	}
+	return pkt
+}
+
+// NewLogicPktFromHeader new packet from a header
+func NewLogicPktFromHeader(header *protoImpl.Header) *LogicPkt {
+	pkt := &LogicPkt{}
+	pkt.Header = protoImpl.Header{
+		Command:   header.Command,
+		Sequence:  header.Sequence,
+		ChannelId: header.ChannelId,
+		Status:    header.Status,
+		Dest:      header.Dest,
+	}
+	return pkt
 }
 
 func (p *LogicPkt) Encode(w io.Writer) error {
@@ -125,6 +150,32 @@ func (p *LogicPkt) Decode(r io.Reader) error {
 		return err
 	}
 	return nil
+}
+
+func (p *LogicPkt) WriteBody(val proto.Message) *LogicPkt {
+	if val == nil {
+		return p
+	}
+	p.Body, _ = proto.Marshal(val)
+	return p
+}
+
+// ReadBody val必须是个指针
+func (p *LogicPkt) ReadBody(val proto.Message) error {
+	return proto.Unmarshal(p.Body, val)
+}
+
+// CopyLogicPktHeader new packet from a header
+func CopyLogicPktHeader(header *protoImpl.Header) *LogicPkt {
+	pkt := &LogicPkt{}
+	pkt.Header = protoImpl.Header{
+		Command:   header.Command,
+		Sequence:  header.Sequence,
+		ChannelId: header.ChannelId,
+		Status:    header.Status,
+		Dest:      header.Dest,
+	}
+	return pkt
 }
 
 func (p *LogicPkt) AddMeta(m ...*protoImpl.Meta) {
@@ -172,6 +223,15 @@ func (p *LogicPkt) GetSpecificMeta(key string) (interface{}, bool) {
 	return FindSpecificMeta(p.Meta, key)
 }
 
+// ServiceName 从header的command中获取serviceName，如chat.user.talk最前面的chat就是serviceName
+func (p *LogicPkt) ServiceName() string {
+	arr := strings.SplitN(p.Command, ".", 2)
+	if len(arr) <= 1 {
+		return "default"
+	}
+	return arr[0]
+}
+
 func FindSpecificMeta(meta []*protoImpl.Meta, key string) (interface{}, bool) {
 	for _, m := range meta {
 		if m.Key == key {
@@ -189,6 +249,12 @@ func FindSpecificMeta(meta []*protoImpl.Meta, key string) (interface{}, bool) {
 	}
 	return nil, false
 }
+
+// basic pkt code
+const (
+	CodePing = uint16(1)
+	CodePong = uint16(2)
+)
 
 // BasicPkt 基础协议，更轻量，用于各服务间的心跳等包
 type BasicPkt struct {

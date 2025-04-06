@@ -1,7 +1,7 @@
 package container
 
 import (
-	"KIM/inter"
+	"KIM/communication"
 	"KIM/protocol/protoImpl"
 	"hash/crc32"
 )
@@ -9,7 +9,7 @@ import (
 // HashSelector 哈希选择器
 type HashSelector struct{}
 
-func (s *HashSelector) Lookup(header *protoImpl.Header, srvs []inter.Service) string {
+func (s *HashSelector) Lookup(header *protoImpl.Header, srvs []communication.Service) string {
 	length := len(srvs)
 	code := HashCode(header.ChannelId)
 	return srvs[code%length].ServiceID()

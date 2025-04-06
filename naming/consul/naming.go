@@ -1,7 +1,7 @@
 package consul
 
 import (
-	"KIM/inter"
+	"KIM/communication"
 	"KIM/logger"
 	"KIM/naming"
 	"errors"
@@ -19,7 +19,7 @@ const (
 // Watch 监控一个服务
 type Watch struct {
 	Service   string
-	Callback  func([]inter.ServiceRegistration)
+	Callback  func([]communication.ServiceRegistration)
 	WaitIndex uint64
 	Quit      chan struct{}
 }
@@ -30,7 +30,7 @@ type Naming struct {
 	watches map[string]*Watch
 }
 
-func (n *Naming) Find(serviceName string, tags ...string) ([]inter.ServiceRegistration, error) {
+func (n *Naming) Find(serviceName string, tags ...string) ([]communication.ServiceRegistration, error) {
 	services, _, err := n.load(serviceName, 0, tags...)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (n *Naming) Find(serviceName string, tags ...string) ([]inter.ServiceRegist
 }
 
 // waitIndex: 是否阻塞查询，0为不阻塞
-func (n *Naming) load(name string, waitIndex uint64, tags ...string) ([]inter.ServiceRegistration, *api.QueryMeta, error) {
+func (n *Naming) load(name string, waitIndex uint64, tags ...string) ([]communication.ServiceRegistration, *api.QueryMeta, error) {
 	opts := &api.QueryOptions{
 		UseCache:  true,
 		MaxAge:    time.Minute,
@@ -49,7 +49,7 @@ func (n *Naming) load(name string, waitIndex uint64, tags ...string) ([]inter.Se
 	if err != nil {
 		return nil, meta, err
 	}
-	services := make([]inter.ServiceRegistration, 0, len(catalogServices))
+	services := make([]communication.ServiceRegistration, 0, len(catalogServices))
 	for _, s := range catalogServices {
 		if s.Checks.AggregatedStatus() != api.HealthPassing {
 			logger.Debugf("load service: id:%s name:%s %s:%d Status:%s", s.ServiceID, s.ServiceName, s.ServiceAddress, s.ServicePort, s.Checks.AggregatedStatus())
@@ -69,7 +69,7 @@ func (n *Naming) load(name string, waitIndex uint64, tags ...string) ([]inter.Se
 	return services, meta, nil
 }
 
-func (n *Naming) Subscribe(serviceName string, callback func(services []inter.ServiceRegistration)) error {
+func (n *Naming) Subscribe(serviceName string, callback func(services []communication.ServiceRegistration)) error {
 	n.Lock()
 	defer n.Unlock()
 	if _, ok := n.watches[serviceName]; ok {
@@ -89,7 +89,7 @@ func (n *Naming) Subscribe(serviceName string, callback func(services []inter.Se
 
 func (n *Naming) watch(wh *Watch) {
 	stopped := false
-	var doWatch = func(service string, callback func([]inter.ServiceRegistration)) {
+	var doWatch = func(service string, callback func([]communication.ServiceRegistration)) {
 		services, meta, err := n.load(service, wh.WaitIndex)
 		if err != nil {
 			logger.Warn(err)
@@ -131,7 +131,7 @@ func (n *Naming) Unsubscribe(serviceName string) error {
 	return nil
 }
 
-func (n *Naming) Register(service inter.ServiceRegistration) error {
+func (n *Naming) Register(service communication.ServiceRegistration) error {
 	reg := &api.AgentServiceRegistration{
 		ID:      service.ServiceID(),
 		Name:    service.ServiceName(),

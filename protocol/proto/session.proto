@@ -1,0 +1,15 @@
+syntax = "proto3";
+package protocol;
+option go_package = "./protoImpl";
+
+message Session {
+  string channelId = 1;// session id
+  string gateId = 2; // gateway ID
+  string account = 3;
+  string zone = 4;
+  string isp = 5;
+  string remoteIP = 6;
+  string device = 7;
+  string app = 8;
+  repeated string tags = 9;
+}
