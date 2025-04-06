@@ -30,6 +30,9 @@ func (d DefaultServiceRegistration) ServiceName() string {
 }
 
 func (d DefaultServiceRegistration) GetMeta() map[string]string {
+	if d.Meta == nil {
+		d.Meta = make(map[string]string) // 自动初始化
+	}
 	return d.Meta
 }
 
