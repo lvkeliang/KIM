@@ -9,7 +9,7 @@ import (
 
 var (
 	configPath  = flag.String("c", "conf.yaml", "配置文件路径")
-	serviceName = flag.String("n", protocol.SNLogin, "服务注册名称")
+	serviceName = flag.String("n", protocol.SNChat, "服务注册名称")
 	version     = "v1.0.0" // 可通过编译时注入
 )
 

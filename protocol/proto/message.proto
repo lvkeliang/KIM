@@ -1,0 +1,28 @@
+syntax = "proto3";
+package protocol;
+option go_package = "./protoImpl";
+
+// chat message
+message MessageReq {
+  int32 type = 1;
+  string body = 2;
+  string extra = 3;
+}
+
+message MessageResp {
+  int64 messageId = 1;
+  int64 sendTime = 2;
+}
+
+message MessagePush {
+  int64 messageId = 1;
+  int32 type = 2;
+  string body = 3;
+  string extra = 4;
+  string sender = 5;
+  int64 sendTime = 6;
+}
+
+message MessageAckReq {
+  int64 messageId = 1;
+}

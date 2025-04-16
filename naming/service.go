@@ -2,7 +2,7 @@ package naming
 
 import "fmt"
 
-// 提供一个对inter.ServiceRegistration的默认实现
+// DefaultServiceRegistration 提供一个对inter.ServiceRegistration的默认实现
 type DefaultServiceRegistration struct {
 	Id        string
 	Name      string

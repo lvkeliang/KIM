@@ -1,11 +1,11 @@
-package redis
+package database
 
 import (
 	"KIM/protocol/protoImpl"
 	"KIM/services"
 	"fmt"
 	"github.com/go-redis/redis/v7"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"time"
 )
 

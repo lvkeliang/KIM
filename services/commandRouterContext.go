@@ -7,7 +7,7 @@ import (
 	"KIM/util"
 	"bytes"
 	"errors"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"sync"
 )
 

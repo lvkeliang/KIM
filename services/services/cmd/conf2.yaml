@@ -1,7 +1,7 @@
-ServiceID: login02
-Listen: ":8007"
+ServiceID: chat02
+Listen: ":8008"
 MonitorPort: 8006
-PublicPort: 8007
+PublicPort: 8008
 Tags:
   - server
 Zone: zone_ali_03

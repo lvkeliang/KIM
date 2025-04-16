@@ -6,7 +6,7 @@ import (
 	"KIM/logger"
 	"KIM/protocol"
 	"KIM/protocol/protoImpl"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"net"
 	"strings"
 )

@@ -2,17 +2,15 @@ package protocol
 
 import "KIM/protocol/protoImpl"
 
-// HeaderOption HeaderOption
+// HeaderOption LogicPacket的Header初始化选项
 type HeaderOption func(*protoImpl.Header)
 
-// WithStatus WithStatus
 func WithStatus(status protoImpl.Status) HeaderOption {
 	return func(h *protoImpl.Header) {
 		h.Status = status
 	}
 }
 
-// WithSeq WithSeq
 func WithSeq(seq uint32) HeaderOption {
 	return func(h *protoImpl.Header) {
 		h.Sequence = seq

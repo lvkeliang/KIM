@@ -5,7 +5,7 @@ import (
 	"KIM/util"
 	"bytes"
 	"fmt"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"io"
 	"reflect"
 	"strconv"

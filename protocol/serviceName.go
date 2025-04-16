@@ -6,4 +6,6 @@ const (
 	SNTGateway = "tgayeway"
 	SNLogin    = "login"
 	SNChat     = "chat"
+	// SNChat    = "login"
+	SNService = "royal" //rpc service
 )

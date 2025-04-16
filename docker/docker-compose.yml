@@ -1,0 +1,13 @@
+services:
+  consul:
+    image: hashicorp/consul:latest
+    container_name: consul
+    network_mode: bridge
+    ports:
+      - '8300:8300'
+      - '8301:8301'
+      - '8301:8301/udp'
+      - '8500:8500'
+      - '53:53'
+      - '53:53/udp'
+    command: agent -dev -dns-port=53 -recursor=8.8.8.8 -ui -client=0.0.0.0
